@@ -227,6 +227,16 @@ header h1 {
     background: linear-gradient(135deg, var(--isola-color), #7c3aed);
 }
 
+.measurement-time {
+    padding: 12px 20px;
+    background: var(--bg-light);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-gray);
+    font-size: 0.9rem;
+    text-align: center;
+    font-weight: 500;
+}
+
 .weather-section {
     padding: 20px;
     border-bottom: 1px solid var(--border-color);
