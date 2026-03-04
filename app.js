@@ -52,6 +52,36 @@ function init() {
     }
 }
 
+// Helper function to format date/time in CET
+function formatDateTimeCET(date) {
+    // Convert to CET (UTC+1 or UTC+2 depending on DST)
+    const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'Europe/Paris',
+        timeZoneName: 'short'
+    };
+    return new Intl.DateTimeFormat('en-GB', options).format(date);
+}
+
+// Helper function to format forecast time in CET
+function formatForecastTimeCET(date) {
+    const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Paris',
+        timeZoneName: 'short'
+    };
+    return new Intl.DateTimeFormat('en-GB', options).format(date);
+}
+
 function handleSaveApiKey() {
     const inputKey = apiKeyInput.value.trim();
     apiKey = inputKey || DEFAULT_API_KEY;
@@ -97,6 +127,7 @@ async function fetchStationData(stationKey) {
     // Process data
     const data = {
         name: station.name,
+        measurementTime: topWeather.dt ? new Date(topWeather.dt * 1000) : null,
         top: {
             elevation: station.top.elevation,
             snow: getSnowDepth(topWeather),
@@ -117,7 +148,9 @@ async function fetchStationData(stationKey) {
         time: currentTime,
         level: currentFreezingLevel,
         temp: topWeather.main.temp,
-        isCurrent: true
+        isCurrent: true,
+        rainMm: 0,
+        snowMm: 0
     });
     
     // Check for precipitation and add forecast freezing levels
@@ -132,7 +165,9 @@ async function fetchStationData(stationKey) {
                 time: p.time,
                 level: freezingLevel,
                 temp: p.temp,
-                isCurrent: false
+                isCurrent: false,
+                rainMm: p.rainMm,
+                snowMm: p.snowMm
             });
         });
     } else {
@@ -144,7 +179,9 @@ async function fetchStationData(stationKey) {
                 time: st.time,
                 level: freezingLevel,
                 temp: st.temp,
-                isCurrent: false
+                isCurrent: false,
+                rainMm: st.rainMm,
+                snowMm: st.snowMm
             });
         });
     }
@@ -206,9 +243,14 @@ function checkPrecipitationForecast(forecastData) {
             const hasSnow = item.snow && Object.keys(item.snow).length > 0;
             
             if (hasRain || hasSnow) {
+                const rainMm = hasRain ? (item.rain['3h'] || 0) : 0;
+                const snowMm = hasSnow ? (item.snow['3h'] || 0) : 0;
+                
                 precipTimes.push({
                     time: new Date(item.dt * 1000),
-                    temp: item.main.temp
+                    temp: item.main.temp,
+                    rainMm: rainMm,
+                    snowMm: snowMm
                 });
             }
         });
@@ -232,10 +274,16 @@ function getSpecificTimesForecast(forecastData) {
             
             if (targetHours.includes(hour) && !seenHours.has(hour)) {
                 seenHours.add(hour);
+                
+                const rainMm = (item.rain && item.rain['3h']) ? item.rain['3h'] : 0;
+                const snowMm = (item.snow && item.snow['3h']) ? item.snow['3h'] : 0;
+                
                 results.push({
                     time: dt,
                     temp: item.main.temp,
-                    hour
+                    hour,
+                    rainMm: rainMm,
+                    snowMm: snowMm
                 });
             }
         });
@@ -256,6 +304,14 @@ function displayResults(auronData, isolaData) {
 }
 
 function displayStationData(stationKey, data) {
+    // Measurement time
+    if (data.measurementTime) {
+        const measurementEl = document.getElementById(`${stationKey}-measurement-time`);
+        if (measurementEl) {
+            measurementEl.textContent = `🕐 Last Measurement: ${formatDateTimeCET(data.measurementTime)}`;
+        }
+    }
+    
     // Top weather
     document.getElementById(`${stationKey}-top-snow`).textContent = 
         data.top.snow > 0 ? `${data.top.snow.toFixed(1)} mm` : 'No data';
@@ -280,12 +336,28 @@ function displayStationData(stationKey, data) {
         const itemEl = document.createElement('div');
         itemEl.className = 'freezing-level-item' + (fl.isCurrent ? ' current' : '');
         
-        const timeStr = formatDateTime(fl.time);
+        const timeStr = formatForecastTimeCET(fl.time);
         const label = fl.isCurrent ? ' (NOW)' : '';
+        
+        // Build precipitation info
+        const precipInfo = [];
+        if (fl.rainMm > 0) {
+            precipInfo.push(`Rain: ${fl.rainMm.toFixed(1)}mm`);
+        }
+        if (fl.snowMm > 0) {
+            const snowCm = fl.snowMm / 10;
+            precipInfo.push(`Snow: ${snowCm.toFixed(1)}cm`);
+        }
+        
+        let dataText = `${fl.level}m (T:${fl.temp.toFixed(1)}°C`;
+        if (precipInfo.length > 0) {
+            dataText += `, ${precipInfo.join(', ')}`;
+        }
+        dataText += ')';
         
         itemEl.innerHTML = `
             <span class="freezing-level-time">${timeStr}${label}</span>
-            <span class="freezing-level-data">${fl.level}m (${fl.temp.toFixed(1)}°C)</span>
+            <span class="freezing-level-data">${dataText}</span>
         `;
         
         freezingLevelsEl.appendChild(itemEl);
@@ -304,7 +376,7 @@ function formatDateTime(date) {
 
 function updateLastUpdated() {
     const now = new Date();
-    lastUpdatedEl.textContent = `Last updated: ${formatDateTime(now)}`;
+    lastUpdatedEl.textContent = `📅 Report Execution: ${formatDateTimeCET(now)}`;
 }
 
 function showLoading() {
