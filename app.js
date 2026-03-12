@@ -1,29 +1,29 @@
-// Default API key
+// Default API key (OpenWeatherMap — for snow/rain/current weather)
 const DEFAULT_API_KEY = 'c422f870ff560166ebbf6f45dcef157b';
 
 // Ski station coordinates
 const STATIONS = {
     auron: {
         name: 'Auron',
-        top: { lat: 44.2167, lon: 6.9167, elevation: 2450 },
+        top:    { lat: 44.2167, lon: 6.9167, elevation: 2450 },
         bottom: { lat: 44.2333, lon: 6.9000, elevation: 1600 }
     },
     isola: {
         name: 'Isola 2000',
-        top: { lat: 44.1833, lon: 7.1500, elevation: 2600 },
-        bottom: { lat: 44.1833, lon: 7.1500, elevation: 2000 }
+        top:    { lat: 44.1833, lon: 7.1500, elevation: 2600 },
+        bottom: { lat: 44.1667, lon: 7.1333, elevation: 2000 }   // ← fixed (was same as top)
     }
 };
 
 // DOM elements
-const apiKeyInput = document.getElementById('apiKeyInput');
-const saveApiKeyBtn = document.getElementById('saveApiKey');
-const refreshBtn = document.getElementById('refreshBtn');
-const loadingEl = document.getElementById('loading');
-const errorEl = document.getElementById('error');
-const resultsEl = document.getElementById('results');
-const apiKeySectionEl = document.getElementById('apiKeySection');
-const lastUpdatedEl = document.getElementById('lastUpdated');
+const apiKeyInput       = document.getElementById('apiKeyInput');
+const saveApiKeyBtn     = document.getElementById('saveApiKey');
+const refreshBtn        = document.getElementById('refreshBtn');
+const loadingEl         = document.getElementById('loading');
+const errorEl           = document.getElementById('error');
+const resultsEl         = document.getElementById('results');
+const apiKeySectionEl   = document.getElementById('apiKeySection');
+const lastUpdatedEl     = document.getElementById('lastUpdated');
 
 // Initialize
 let apiKey = localStorage.getItem('skiApiKey') || DEFAULT_API_KEY;
@@ -31,7 +31,7 @@ let apiKey = localStorage.getItem('skiApiKey') || DEFAULT_API_KEY;
 // Register service worker
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js')
-        .then(reg => console.log('Service Worker registered'))
+        .then(() => console.log('Service Worker registered'))
         .catch(err => console.log('Service Worker registration failed:', err));
 }
 
@@ -46,41 +46,34 @@ function init() {
     if (apiKey && apiKey !== DEFAULT_API_KEY) {
         apiKeyInput.value = apiKey;
     }
-    // Auto-fetch data on load if API key exists
     if (apiKey) {
         fetchAllData();
     }
 }
 
-// Helper function to format date/time in CET
+// ─────────────────────────────────────────────
+//  Date / time helpers
+// ─────────────────────────────────────────────
+
 function formatDateTimeCET(date) {
-    // Convert to CET (UTC+1 or UTC+2 depending on DST)
-    const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'Europe/Paris',
-        timeZoneName: 'short'
-    };
-    return new Intl.DateTimeFormat('en-GB', options).format(date);
+    return new Intl.DateTimeFormat('en-GB', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        timeZone: 'Europe/Paris', timeZoneName: 'short'
+    }).format(date);
 }
 
-// Helper function to format forecast time in CET
 function formatForecastTimeCET(date) {
-    const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Paris',
-        timeZoneName: 'short'
-    };
-    return new Intl.DateTimeFormat('en-GB', options).format(date);
+    return new Intl.DateTimeFormat('en-GB', {
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+        timeZone: 'Europe/Paris', timeZoneName: 'short'
+    }).format(date);
 }
+
+// ─────────────────────────────────────────────
+//  Main data fetch
+// ─────────────────────────────────────────────
 
 function handleSaveApiKey() {
     const inputKey = apiKeyInput.value.trim();
@@ -92,21 +85,17 @@ function handleSaveApiKey() {
 async function fetchAllData() {
     showLoading();
     hideError();
-    
+
     try {
-        // Fetch data for both stations
-        const auronData = await fetchStationData('auron');
-        const isolaData = await fetchStationData('isola');
-        
-        // Display results
+        const [auronData, isolaData] = await Promise.all([
+            fetchStationData('auron'),
+            fetchStationData('isola')
+        ]);
+
         displayResults(auronData, isolaData);
-        
-        // Update last updated time
         updateLastUpdated();
-        
-        // Hide API key section after successful fetch
         apiKeySectionEl.style.display = 'none';
-        
+
     } catch (error) {
         showError(error.message);
     } finally {
@@ -116,102 +105,160 @@ async function fetchAllData() {
 
 async function fetchStationData(stationKey) {
     const station = STATIONS[stationKey];
-    
-    // Fetch current weather for top and bottom
-    const topWeather = await fetchCurrentWeather(station.top.lat, station.top.lon);
-    const bottomWeather = await fetchCurrentWeather(station.bottom.lat, station.bottom.lon);
-    
-    // Fetch forecast
-    const forecast = await fetchForecast(station.top.lat, station.top.lon);
-    
-    // Process data
+
+    // ── OWM: current weather at top & bottom ──
+    const [topWeather, bottomWeather, forecast] = await Promise.all([
+        fetchCurrentWeather(station.top.lat,    station.top.lon),
+        fetchCurrentWeather(station.bottom.lat, station.bottom.lon),
+        fetchForecast(station.top.lat, station.top.lon)
+    ]);
+
     const data = {
-        name: station.name,
+        name:            station.name,
         measurementTime: topWeather.dt ? new Date(topWeather.dt * 1000) : null,
         top: {
             elevation: station.top.elevation,
-            snow: getSnowDepth(topWeather),
-            temp: topWeather.main.temp
+            snow:      getSnowDepth(topWeather),
+            temp:      topWeather.main.temp
         },
         bottom: {
             elevation: station.bottom.elevation,
-            snow: getSnowDepth(bottomWeather),
-            temp: bottomWeather.main.temp
+            snow:      getSnowDepth(bottomWeather),
+            temp:      bottomWeather.main.temp
         },
-        freezingLevels: []
+        hasPrecipitation: false,
+        precipEvents:     [],
+        freezingLevels:   [],
+        freezingSource:   ''
     };
-    
-    // Add current freezing level
-    const currentTime = new Date();
-    const currentFreezingLevel = calculateFreezingLevel(topWeather.main.temp, station.top.elevation);
-    data.freezingLevels.push({
-        time: currentTime,
-        level: currentFreezingLevel,
-        temp: topWeather.main.temp,
-        isCurrent: true,
-        rainMm: 0,
-        snowMm: 0
-    });
-    
-    // Check for precipitation and add forecast freezing levels
+
+    // ── OWM: precipitation forecast ──
     const { hasPrecip, precipTimes } = checkPrecipitationForecast(forecast);
     data.hasPrecipitation = hasPrecip;
-    
-    if (hasPrecip) {
-        // Add freezing levels for precipitation times
-        precipTimes.forEach(p => {
-            const freezingLevel = calculateFreezingLevel(p.temp, station.top.elevation);
-            data.freezingLevels.push({
-                time: p.time,
-                level: freezingLevel,
-                temp: p.temp,
-                isCurrent: false,
-                rainMm: p.rainMm,
-                snowMm: p.snowMm
-            });
-        });
+    data.precipEvents     = precipTimes;
+
+    // ── Open-Meteo: freezing level (primary source) ──
+    const omLevels = await fetchFreezingLevelsOpenMeteo(station.top.lat, station.top.lon);
+
+    if (omLevels.length > 0) {
+        data.freezingLevels = omLevels;
+        data.freezingSource = 'Open-Meteo (direct measurement)';
     } else {
-        // Add specific times
+        // ── Fallback: lapse-rate estimate from bottom-station temperature ──
+        data.freezingSource = 'Estimated (lapse rate from bottom station)';
         const specificTimes = getSpecificTimesForecast(forecast);
+
         specificTimes.forEach(st => {
-            const freezingLevel = calculateFreezingLevel(st.temp, station.top.elevation);
+            // Convert top-station forecast temp to an estimated bottom-station temp
+            const elevDiff = station.top.elevation - station.bottom.elevation;
+            const estBottomTemp = st.temp + (6.5 / 1000) * elevDiff;
             data.freezingLevels.push({
-                time: st.time,
-                level: freezingLevel,
-                temp: st.temp,
-                isCurrent: false,
-                rainMm: st.rainMm,
-                snowMm: st.snowMm
+                time:  st.time,
+                level: fallbackFreezingLevel(estBottomTemp, station.bottom.elevation)
             });
         });
+
+        // If no forecast data either, use current bottom temperature
+        if (data.freezingLevels.length === 0) {
+            data.freezingLevels.push({
+                time:  new Date(),
+                level: fallbackFreezingLevel(data.bottom.temp, station.bottom.elevation)
+            });
+        }
     }
-    
+
     return data;
 }
 
+// ─────────────────────────────────────────────
+//  Open-Meteo API — freezing level
+// ─────────────────────────────────────────────
+
+/**
+ * Fetch hourly freezing-level altitude (metres) from Open-Meteo.
+ *
+ * Open-Meteo is free, requires no API key, uses a ~1-2 km resolution
+ * numerical weather model, and provides freezing_level_height directly —
+ * no lapse-rate approximation required.
+ *
+ * Returns slots at 06h, 12h and 18h UTC for the next 5 days.
+ */
+async function fetchFreezingLevelsOpenMeteo(lat, lon) {
+    const url = `https://api.open-meteo.com/v1/forecast` +
+        `?latitude=${lat}&longitude=${lon}` +
+        `&hourly=freezing_level_height` +
+        `&timezone=UTC` +
+        `&forecast_days=5`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data    = await response.json();
+        const times   = data.hourly.time;                    // "2026-03-12T06:00"
+        const levels  = data.hourly.freezing_level_height;   // metres
+
+        const TARGET_HOURS = new Set([6, 12, 18]);
+        const result = [];
+
+        times.forEach((t, i) => {
+            const dt   = new Date(t + ':00Z');               // parse as UTC
+            const hour = dt.getUTCHours();
+            if (TARGET_HOURS.has(hour) && levels[i] != null) {
+                result.push({ time: dt, level: Math.round(levels[i]) });
+            }
+        });
+
+        return result;
+
+    } catch (e) {
+        console.warn('Open-Meteo unavailable:', e.message);
+        return [];
+    }
+}
+
+/**
+ * Fallback: estimate freezing level from bottom-station temperature.
+ *
+ * IMPORTANT — use the BOTTOM station (not top) as reference:
+ * - The bottom is often above 0 °C in winter, so lapse-rate extrapolation
+ *   actually produces a meaningful height above the reference point.
+ * - Using the top station (old bug): top is ≤ 0 °C in winter → the formula
+ *   always returned the fixed top elevation, never varying.
+ */
+function fallbackFreezingLevel(tempBottom, elevBottom) {
+    const lapseRate = 6.5 / 1000;    // °C per metre
+    if (tempBottom <= 0) return elevBottom;
+    return Math.round(elevBottom + tempBottom / lapseRate);
+}
+
+// ─────────────────────────────────────────────
+//  OpenWeatherMap helpers
+// ─────────────────────────────────────────────
+
 async function fetchCurrentWeather(lat, lon) {
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/weather` +
+        `?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const response = await fetch(url);
-    
+
     if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401)
             throw new Error('Invalid API key. Please check your API key and try again.');
-        }
         throw new Error(`Failed to fetch weather data: ${response.statusText}`);
     }
-    
-    return await response.json();
+
+    return response.json();
 }
 
 async function fetchForecast(lat, lon) {
-    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    const url = `https://api.openweathermap.org/data/2.5/forecast` +
+        `?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const response = await fetch(url);
-    
-    if (!response.ok) {
+
+    if (!response.ok)
         throw new Error(`Failed to fetch forecast data: ${response.statusText}`);
-    }
-    
-    return await response.json();
+
+    return response.json();
 }
 
 function getSnowDepth(weatherData) {
@@ -221,179 +268,143 @@ function getSnowDepth(weatherData) {
     return 0;
 }
 
-function calculateFreezingLevel(tempGround, elevationGround) {
-    if (tempGround <= 0) {
-        return elevationGround;
-    }
-    
-    // Temperature decreases by 6.5°C per 1000m
-    const lapseRate = 6.5 / 1000;
-    const heightAboveGround = tempGround / lapseRate;
-    const freezingLevel = elevationGround + heightAboveGround;
-    
-    return Math.round(freezingLevel);
-}
-
 function checkPrecipitationForecast(forecastData) {
     const precipTimes = [];
-    
+
     if (forecastData && forecastData.list) {
         forecastData.list.forEach(item => {
             const hasRain = item.rain && Object.keys(item.rain).length > 0;
             const hasSnow = item.snow && Object.keys(item.snow).length > 0;
-            
+
             if (hasRain || hasSnow) {
-                const rainMm = hasRain ? (item.rain['3h'] || 0) : 0;
-                const snowMm = hasSnow ? (item.snow['3h'] || 0) : 0;
-                
                 precipTimes.push({
-                    time: new Date(item.dt * 1000),
-                    temp: item.main.temp,
-                    rainMm: rainMm,
-                    snowMm: snowMm
+                    time:   new Date(item.dt * 1000),
+                    temp:   item.main.temp,
+                    rainMm: hasRain ? (item.rain['3h'] || 0) : 0,
+                    snowMm: hasSnow ? (item.snow['3h'] || 0) : 0
                 });
             }
         });
     }
-    
-    return {
-        hasPrecip: precipTimes.length > 0,
-        precipTimes
-    };
+
+    return { hasPrecip: precipTimes.length > 0, precipTimes };
 }
 
+/**
+ * Get forecast at target hours (8, 12, 16, 20) across ALL 5 days.
+ * (Old bug: deduplication by hour kept only day-1 data.)
+ */
 function getSpecificTimesForecast(forecastData) {
-    const targetHours = [8, 11, 16, 20, 23];
+    const TARGET_HOURS = new Set([8, 12, 16, 20]);
     const results = [];
-    const seenHours = new Set();
-    
+
     if (forecastData && forecastData.list) {
         forecastData.list.forEach(item => {
-            const dt = new Date(item.dt * 1000);
-            const hour = dt.getHours();
-            
-            if (targetHours.includes(hour) && !seenHours.has(hour)) {
-                seenHours.add(hour);
-                
-                const rainMm = (item.rain && item.rain['3h']) ? item.rain['3h'] : 0;
-                const snowMm = (item.snow && item.snow['3h']) ? item.snow['3h'] : 0;
-                
+            const dt   = new Date(item.dt * 1000);
+            const hour = dt.getUTCHours();
+
+            if (TARGET_HOURS.has(hour)) {
                 results.push({
-                    time: dt,
-                    temp: item.main.temp,
+                    time:   dt,
+                    temp:   item.main.temp,
                     hour,
-                    rainMm: rainMm,
-                    snowMm: snowMm
+                    rainMm: (item.rain && item.rain['3h']) ? item.rain['3h'] : 0,
+                    snowMm: (item.snow && item.snow['3h']) ? item.snow['3h'] : 0
                 });
             }
         });
     }
-    
-    return results.sort((a, b) => a.hour - b.hour);
+
+    return results.sort((a, b) => a.time - b.time);
 }
 
+// ─────────────────────────────────────────────
+//  Display helpers
+// ─────────────────────────────────────────────
+
 function displayResults(auronData, isolaData) {
-    // Display Auron data
     displayStationData('auron', auronData);
-    
-    // Display Isola data
     displayStationData('isola', isolaData);
-    
-    // Show results
     resultsEl.style.display = 'block';
 }
 
 function displayStationData(stationKey, data) {
     // Measurement time
-    if (data.measurementTime) {
-        const measurementEl = document.getElementById(`${stationKey}-measurement-time`);
-        if (measurementEl) {
-            measurementEl.textContent = `🕐 Last Measurement: ${formatDateTimeCET(data.measurementTime)}`;
-        }
+    const measurementEl = document.getElementById(`${stationKey}-measurement-time`);
+    if (measurementEl && data.measurementTime) {
+        measurementEl.textContent = `🕐 Last OWM Measurement: ${formatDateTimeCET(data.measurementTime)}`;
     }
-    
+
     // Top weather
-    document.getElementById(`${stationKey}-top-snow`).textContent = 
+    document.getElementById(`${stationKey}-top-snow`).textContent =
         data.top.snow > 0 ? `${data.top.snow.toFixed(1)} mm` : 'No data';
-    document.getElementById(`${stationKey}-top-temp`).textContent = 
+    document.getElementById(`${stationKey}-top-temp`).textContent =
         `${data.top.temp.toFixed(1)}°C`;
-    
+
     // Bottom weather
-    document.getElementById(`${stationKey}-bottom-snow`).textContent = 
+    document.getElementById(`${stationKey}-bottom-snow`).textContent =
         data.bottom.snow > 0 ? `${data.bottom.snow.toFixed(1)} mm` : 'No data';
-    document.getElementById(`${stationKey}-bottom-temp`).textContent = 
+    document.getElementById(`${stationKey}-bottom-temp`).textContent =
         `${data.bottom.temp.toFixed(1)}°C`;
-    
-    // Precipitation status
-    document.getElementById(`${stationKey}-precip`).textContent = 
+
+    // Precipitation
+    document.getElementById(`${stationKey}-precip`).textContent =
         data.hasPrecipitation ? 'YES ❄️' : 'NO ☀️';
-    
+
     // Freezing levels
     const freezingLevelsEl = document.getElementById(`${stationKey}-freezing-levels`);
     freezingLevelsEl.innerHTML = '';
-    
+
+    // Source label
+    const sourceEl = document.createElement('p');
+    sourceEl.className = 'freezing-source';
+    sourceEl.innerHTML = `<em>Source: ${data.freezingSource}</em>`;
+    freezingLevelsEl.appendChild(sourceEl);
+
+    // Each forecast slot
     data.freezingLevels.forEach(fl => {
         const itemEl = document.createElement('div');
-        itemEl.className = 'freezing-level-item' + (fl.isCurrent ? ' current' : '');
-        
+        itemEl.className = 'freezing-level-item';
+
         const timeStr = formatForecastTimeCET(fl.time);
-        const label = fl.isCurrent ? ' (NOW)' : '';
-        
-        // Build precipitation info
-        const precipInfo = [];
-        if (fl.rainMm > 0) {
-            precipInfo.push(`Rain: ${fl.rainMm.toFixed(1)}mm`);
-        }
-        if (fl.snowMm > 0) {
-            const snowCm = fl.snowMm / 10;
-            precipInfo.push(`Snow: ${snowCm.toFixed(1)}cm`);
-        }
-        
-        let dataText = `${fl.level}m (T:${fl.temp.toFixed(1)}°C`;
-        if (precipInfo.length > 0) {
-            dataText += `, ${precipInfo.join(', ')}`;
-        }
-        dataText += ')';
-        
+
         itemEl.innerHTML = `
-            <span class="freezing-level-time">${timeStr}${label}</span>
-            <span class="freezing-level-data">${dataText}</span>
+            <span class="freezing-level-time">${timeStr}</span>
+            <span class="freezing-level-data">→ ${fl.level} m</span>
         `;
-        
+
         freezingLevelsEl.appendChild(itemEl);
     });
-}
 
-function formatDateTime(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    // Precipitation events (below the freezing levels, collapsible)
+    if (data.hasPrecipitation && data.precipEvents.length > 0) {
+        const precipEl = document.createElement('details');
+        precipEl.className = 'precip-details';
+        precipEl.innerHTML = `<summary>🌨 Precipitation events (${data.precipEvents.length})</summary>`;
+
+        data.precipEvents.forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'freezing-level-item';
+            const parts = [];
+            if (p.rainMm > 0) parts.push(`Rain ${p.rainMm.toFixed(1)}mm`);
+            if (p.snowMm > 0) parts.push(`Snow ${(p.snowMm / 10).toFixed(1)}cm`);
+            parts.push(`T:${p.temp.toFixed(1)}°C`);
+            row.innerHTML = `
+                <span class="freezing-level-time">${formatForecastTimeCET(p.time)}</span>
+                <span class="freezing-level-data">${parts.join('  ')}</span>
+            `;
+            precipEl.appendChild(row);
+        });
+
+        freezingLevelsEl.appendChild(precipEl);
+    }
 }
 
 function updateLastUpdated() {
-    const now = new Date();
-    lastUpdatedEl.textContent = `📅 Report Execution: ${formatDateTimeCET(now)}`;
+    lastUpdatedEl.textContent = `📅 Report Execution: ${formatDateTimeCET(new Date())}`;
 }
 
-function showLoading() {
-    loadingEl.style.display = 'block';
-    resultsEl.style.display = 'none';
-}
-
-function hideLoading() {
-    loadingEl.style.display = 'none';
-}
-
-function showError(message) {
-    errorEl.textContent = `❌ Error: ${message}`;
-    errorEl.style.display = 'block';
-    resultsEl.style.display = 'none';
-}
-
-function hideError() {
-    errorEl.style.display = 'none';
-}
+function showLoading()  { loadingEl.style.display  = 'block'; resultsEl.style.display = 'none'; }
+function hideLoading()  { loadingEl.style.display  = 'none'; }
+function showError(msg) { errorEl.textContent = `❌ Error: ${msg}`; errorEl.style.display = 'block'; resultsEl.style.display = 'none'; }
+function hideError()    { errorEl.style.display    = 'none'; }
