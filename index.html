@@ -68,9 +68,9 @@
                     </div>
 
                     <div class="weather-section">
-                        <h3>3️⃣ Freezing Level Forecast</h3>
+                    <h3>3️⃣ Freezing Level Forecast</h3>
                         <div class="weather-data">
-                            <p><strong>Rain/Snow forecast:</strong> <span id="auron-precip">-</span></p>
+                            <p><strong>Precipitation forecast:</strong> <span id="auron-precip">-</span></p>
                             <div id="auron-freezing-levels" class="freezing-levels"></div>
                         </div>
                     </div>
@@ -109,9 +109,9 @@
                     </div>
 
                     <div class="weather-section">
-                        <h3>3️⃣ Freezing Level Forecast</h3>
+                    <h3>3️⃣ Freezing Level Forecast</h3>
                         <div class="weather-data">
-                            <p><strong>Rain/Snow forecast:</strong> <span id="isola-precip">-</span></p>
+                            <p><strong>Precipitation forecast:</strong> <span id="isola-precip">-</span></p>
                             <div id="isola-freezing-levels" class="freezing-levels"></div>
                         </div>
                     </div>
@@ -129,8 +129,8 @@
                 <ul>
                     <li><strong>Recent snowfall</strong> shows precipitation in the last 3 hours, NOT the total accumulated snow base.</li>
                     <li>For actual snow height and piste conditions, check the official bulletins above.</li>
-                    <li>Freezing level is calculated using standard atmospheric lapse rate (6.5°C/1000m).</li>
-                    <li>Temperature inversions (warmer at top than bottom) are common in mountain regions.</li>
+                    <li><strong>Freezing level</strong> is provided directly by <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> (free, no API key, ~1–2 km resolution, hourly model). It shows the altitude at which the temperature crosses 0°C and varies by hour and by station.</li>
+                    <li>If Open-Meteo is unavailable, the freezing level is estimated from the bottom-station temperature using the standard lapse rate (6.5°C/1000m).</li>
                 </ul>
             </div>
 
@@ -138,7 +138,8 @@
         </div>
 
         <footer>
-            <p>Data provided by <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
+            <p>Weather &amp; precipitation: <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
+            <p>Freezing level: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a></p>
             <p>Made with ❄️ for ski enthusiasts</p>
         </footer>
     </div>
