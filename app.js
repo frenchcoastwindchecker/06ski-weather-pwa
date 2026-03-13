@@ -1,4 +1,4 @@
-// Default API key (OpenWeatherMap — for snow/rain/current weather)
+    // Default API key (OpenWeatherMap — for snow/rain/current weather)
 const DEFAULT_API_KEY = 'c422f870ff560166ebbf6f45dcef157b';
 
 // Ski station coordinates
@@ -319,6 +319,52 @@ function getSpecificTimesForecast(forecastData) {
 }
 
 // ─────────────────────────────────────────────
+//  Timeline builder — merges precip + freezing level
+// ─────────────────────────────────────────────
+
+/**
+ * Merge precipitation events (OWM) and freezing-level slots (Open-Meteo)
+ * into a single list sorted by timestamp.
+ *
+ * Each entry: { time, flLevel, rainMm, snowMm, temp }
+ * Entries sharing the same hour are merged into one row.
+ */
+function buildTimeline(data) {
+    const merged = new Map();
+
+    const key = dt => {
+        const d = new Date(dt);
+        d.setMinutes(0, 0, 0);
+        return d.getTime();
+    };
+
+    // Add freezing-level slots
+    data.freezingLevels.forEach(fl => {
+        const k = key(fl.time);
+        if (!merged.has(k)) {
+            merged.set(k, { time: new Date(fl.time), flLevel: null, rainMm: null, snowMm: null, temp: null });
+        }
+        merged.get(k).flLevel = fl.level;
+        // normalise time to the truncated hour
+        merged.get(k).time = new Date(k);
+    });
+
+    // Add precipitation events
+    data.precipEvents.forEach(p => {
+        const k = key(p.time);
+        if (!merged.has(k)) {
+            merged.set(k, { time: new Date(k), flLevel: null, rainMm: null, snowMm: null, temp: null });
+        }
+        const entry = merged.get(k);
+        if (p.rainMm > 0) entry.rainMm = p.rainMm;
+        if (p.snowMm > 0) entry.snowMm = p.snowMm;
+        entry.temp = p.temp;
+    });
+
+    return [...merged.values()].sort((a, b) => a.time - b.time);
+}
+
+// ─────────────────────────────────────────────
 //  Display helpers
 // ─────────────────────────────────────────────
 
@@ -347,64 +393,18 @@ function displayStationData(stationKey, data) {
     document.getElementById(`${stationKey}-bottom-temp`).textContent =
         `${data.bottom.temp.toFixed(1)}°C`;
 
-    // Precipitation
-    document.getElementById(`${stationKey}-precip`).textContent =
-        data.hasPrecipitation ? 'YES ❄️' : 'NO ☀️';
-
-    // Freezing levels
-    const freezingLevelsEl = document.getElementById(`${stationKey}-freezing-levels`);
-    freezingLevelsEl.innerHTML = '';
+    // ── Unified timeline (freezing level + precipitation) ──
+    const timelineEl = document.getElementById(`${stationKey}-timeline`);
+    timelineEl.innerHTML = '';
 
     // Source label
     const sourceEl = document.createElement('p');
     sourceEl.className = 'freezing-source';
-    sourceEl.innerHTML = `<em>Source: ${data.freezingSource}</em>`;
-    freezingLevelsEl.appendChild(sourceEl);
+    sourceEl.innerHTML = `<em>FL source: ${data.freezingSource}</em>`;
+    timelineEl.appendChild(sourceEl);
 
-    // Each forecast slot
-    data.freezingLevels.forEach(fl => {
-        const itemEl = document.createElement('div');
-        itemEl.className = 'freezing-level-item';
-
-        const timeStr = formatForecastTimeCET(fl.time);
-
-        itemEl.innerHTML = `
-            <span class="freezing-level-time">${timeStr}</span>
-            <span class="freezing-level-data">→ ${fl.level} m</span>
-        `;
-
-        freezingLevelsEl.appendChild(itemEl);
-    });
-
-    // Precipitation events (below the freezing levels, collapsible)
-    if (data.hasPrecipitation && data.precipEvents.length > 0) {
-        const precipEl = document.createElement('details');
-        precipEl.className = 'precip-details';
-        precipEl.innerHTML = `<summary>🌨 Precipitation events (${data.precipEvents.length})</summary>`;
-
-        data.precipEvents.forEach(p => {
-            const row = document.createElement('div');
-            row.className = 'freezing-level-item';
-            const parts = [];
-            if (p.rainMm > 0) parts.push(`Rain ${p.rainMm.toFixed(1)}mm`);
-            if (p.snowMm > 0) parts.push(`Snow ${(p.snowMm / 10).toFixed(1)}cm`);
-            parts.push(`T:${p.temp.toFixed(1)}°C`);
-            row.innerHTML = `
-                <span class="freezing-level-time">${formatForecastTimeCET(p.time)}</span>
-                <span class="freezing-level-data">${parts.join('  ')}</span>
-            `;
-            precipEl.appendChild(row);
-        });
-
-        freezingLevelsEl.appendChild(precipEl);
-    }
-}
-
-function updateLastUpdated() {
-    lastUpdatedEl.textContent = `📅 Report Execution: ${formatDateTimeCET(new Date())}`;
-}
-
-function showLoading()  { loadingEl.style.display  = 'block'; resultsEl.style.display = 'none'; }
-function hideLoading()  { loadingEl.style.display  = 'none'; }
-function showError(msg) { errorEl.textContent = `❌ Error: ${msg}`; errorEl.style.display = 'block'; resultsEl.style.display = 'none'; }
-function hideError()    { errorEl.style.display    = 'none'; }
+    // Column header
+    const headerEl = document.createElement('div');
+    headerEl.className = 'timeline-header';
+    headerEl.innerHTML =
+        `<span class="tl-time">Date / Time (CET)</span>` +
