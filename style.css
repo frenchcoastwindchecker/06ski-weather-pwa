@@ -205,7 +205,11 @@ header h1 {
 .temp { font-weight: 700; color: #fbbf24; }
 
 /* ── Forecast timeline ────────────────────────────────────────── */
-.forecast-timeline { font-size: .8rem; }
+.forecast-timeline {
+    font-size: .8rem;
+    overflow-x: auto;          /* horizontal scroll on narrow screens */
+    -webkit-overflow-scrolling: touch;
+}
 
 .fl-source {
     color: #64748b;
@@ -226,6 +230,7 @@ header h1 {
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: .04em;
+    min-width: 600px;          /* prevents collapse; parent scrolls instead */
 }
 
 /* data rows */
@@ -236,6 +241,7 @@ header h1 {
     padding: .32rem .5rem;
     border-bottom: 1px solid rgba(255,255,255,.04);
     transition: background .1s;
+    min-width: 600px;
 }
 .tl-row:hover { background: rgba(255,255,255,.05); }
 .tl-row.has-precip { background: rgba(59,130,246,.08); }
@@ -293,18 +299,12 @@ footer a { color: #60a5fa; text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 
 /* ── Responsive ───────────────────────────────────────────────── */
-@media (max-width: 640px) {
+/* No column-count changes needed — the table scrolls horizontally.
+   Reduce font size slightly on very small screens for comfort.     */
+@media (max-width: 480px) {
     .tl-header,
     .tl-row {
-        grid-template-columns: 9rem 4rem 7rem 3.5rem 7rem 3.5rem;
-        font-size: .72rem;
-    }
-}
-
-@media (max-width: 420px) {
-    .tl-header,
-    .tl-row {
-        grid-template-columns: 8rem 3.8rem 6rem 3rem 6rem 3rem;
-        font-size: .68rem;
+        font-size: .74rem;
+        gap: .2rem;
     }
 }
