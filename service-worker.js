@@ -1,15 +1,17 @@
 // ═══════════════════════════════════════════════════════════════
 //  Ski Stations Weather PWA — Service Worker
-//  Cache version: v5  (March 2026 — full-width layout + mobile scroll)
+//  Cache version: v6  (March 2026 — real PNG icons for Android install)
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'ski-pwa-v5';
+const CACHE_NAME = 'ski-pwa-v6';
 const ASSETS = [
     './',
     './index.html',
     './app.js',
     './style.css',
-    './manifest.json'
+    './manifest.json',
+    './icon-192.png',
+    './icon-512.png'
 ];
 
 // ── Install: pre-cache app shell ──────────────────────────────
