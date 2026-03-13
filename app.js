@@ -1,4 +1,4 @@
-    // Default API key (OpenWeatherMap — for snow/rain/current weather)
+// Default API key (OpenWeatherMap — for snow/rain/current weather)
 const DEFAULT_API_KEY = 'c422f870ff560166ebbf6f45dcef157b';
 
 // Ski station coordinates
@@ -25,8 +25,12 @@ const resultsEl         = document.getElementById('results');
 const apiKeySectionEl   = document.getElementById('apiKeySection');
 const lastUpdatedEl     = document.getElementById('lastUpdated');
 
-// Initialize
+// Initialize — guard against stale / corrupted localStorage values
 let apiKey = localStorage.getItem('skiApiKey') || DEFAULT_API_KEY;
+if (!apiKey || apiKey === 'undefined' || apiKey === 'null' || apiKey.trim() === '') {
+    apiKey = DEFAULT_API_KEY;
+    localStorage.removeItem('skiApiKey');
+}
 
 // Register service worker
 if ('serviceWorker' in navigator) {
@@ -43,12 +47,10 @@ refreshBtn.addEventListener('click', fetchAllData);
 init();
 
 function init() {
-    if (apiKey && apiKey !== DEFAULT_API_KEY) {
-        apiKeyInput.value = apiKey;
-    }
-    if (apiKey) {
-        fetchAllData();
-    }
+    // Always show the active key in the input so the user can inspect / override it
+    apiKeyInput.value = (apiKey && apiKey !== DEFAULT_API_KEY) ? apiKey : '';
+    apiKeyInput.placeholder = `Default key pre-configured (…${DEFAULT_API_KEY.slice(-6)})`;
+    fetchAllData();
 }
 
 // ─────────────────────────────────────────────
@@ -77,8 +79,14 @@ function formatForecastTimeCET(date) {
 
 function handleSaveApiKey() {
     const inputKey = apiKeyInput.value.trim();
-    apiKey = inputKey || DEFAULT_API_KEY;
-    localStorage.setItem('skiApiKey', apiKey);
+    if (inputKey) {
+        apiKey = inputKey;
+        localStorage.setItem('skiApiKey', apiKey);
+    } else {
+        // Empty input → revert to built-in default and clear any stored value
+        apiKey = DEFAULT_API_KEY;
+        localStorage.removeItem('skiApiKey');
+    }
     fetchAllData();
 }
 
@@ -400,11 +408,3 @@ function displayStationData(stationKey, data) {
     // Source label
     const sourceEl = document.createElement('p');
     sourceEl.className = 'freezing-source';
-    sourceEl.innerHTML = `<em>FL source: ${data.freezingSource}</em>`;
-    timelineEl.appendChild(sourceEl);
-
-    // Column header
-    const headerEl = document.createElement('div');
-    headerEl.className = 'timeline-header';
-    headerEl.innerHTML =
-        `<span class="tl-time">Date / Time (CET)</span>` +
