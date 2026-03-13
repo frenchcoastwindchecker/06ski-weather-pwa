@@ -360,9 +360,10 @@ function buildTimeline(data) {
 // ═══════════════════════════════════════════════════════════════════
 
 async function fetchAllData() {
-    showLoading();
-    hideError();
     try {
+        showLoading();
+        hideError();
+
         const [auronData, isolaData] = await Promise.all([
             fetchStationData('auron'),
             fetchStationData('isola')
@@ -467,11 +468,22 @@ function displayStationData(stationKey, data) {
 }
 
 // ── UI helpers ────────────────────────────────────────────────────
-function showLoading()  { loadingEl.style.display = 'block'; resultsEl.style.display = 'none'; }
-function hideLoading()  { loadingEl.style.display = 'none'; }
-function showError(msg) {
-    errorEl.textContent   = `❌ Error: ${msg}`;
-    errorEl.style.display = 'block';
-    resultsEl.style.display = 'none';
+function showLoading() {
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (resultsEl) resultsEl.style.display = 'none';
 }
-function hideError() { errorEl.style.display = 'none'; }
+function hideLoading() {
+    if (loadingEl) loadingEl.style.display = 'none';
+}
+function showError(msg) {
+    if (errorEl) {
+        errorEl.innerHTML = `<strong>❌ Error:</strong> ${msg}<br><br>
+            <small>Open browser console (F12 → Console tab) for details.<br>
+            The default API key is <code>${DEFAULT_API_KEY.slice(0,6)}…</code></small>`;
+        errorEl.style.display = 'block';
+    }
+    if (resultsEl) resultsEl.style.display = 'none';
+}
+function hideError() {
+    if (errorEl) errorEl.style.display = 'none';
+}
