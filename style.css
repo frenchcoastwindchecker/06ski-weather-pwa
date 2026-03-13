@@ -274,31 +274,15 @@ header h1 {
     color: var(--secondary-blue) !important;
 }
 
-.freezing-levels {
-    margin-top: 15px;
-    max-height: 300px;
+/* ── Unified forecast timeline ── */
+
+.forecast-timeline {
+    margin-top: 10px;
+    max-height: 400px;
     overflow-y: auto;
-    padding: 10px;
-    background: var(--bg-light);
     border-radius: 8px;
-}
-
-.freezing-level-item {
-    padding: 8px 12px;
-    margin: 5px 0;
-    background: white;
-    border-radius: 6px;
-    border-left: 3px solid var(--secondary-blue);
-    font-size: 0.9rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.freezing-level-item.current {
-    border-left-color: var(--success-green);
-    background: #f0fdf4;
-    font-weight: 600;
+    background: var(--bg-light);
+    padding: 10px;
 }
 
 .freezing-source {
@@ -311,28 +295,93 @@ header h1 {
     border-left: 3px solid var(--secondary-blue);
 }
 
-.precip-details {
-    margin-top: 10px;
-}
-
-.precip-details summary {
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--primary-blue);
+/* Header row */
+.timeline-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.4fr 1fr;
+    gap: 6px;
     padding: 6px 10px;
-    background: #eff6ff;
-    border-radius: 6px;
-    user-select: none;
+    background: var(--primary-blue);
+    color: white;
+    border-radius: 6px 6px 0 0;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    position: sticky;
+    top: 0;
 }
 
-.precip-details summary:hover {
+/* Data rows */
+.timeline-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1.4fr 1fr;
+    gap: 6px;
+    padding: 6px 10px;
+    margin: 2px 0;
+    background: white;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    border-left: 3px solid transparent;
+    align-items: center;
+    transition: background 0.15s;
+}
+
+.timeline-row:hover {
+    background: #f0f9ff;
+}
+
+/* Highlight rows with precipitation */
+.timeline-row.has-precip {
+    border-left-color: var(--secondary-blue);
+    background: #eff6ff;
+}
+
+.timeline-row.has-precip:hover {
     background: #dbeafe;
 }
 
-.precip-details[open] summary {
-    border-radius: 6px 6px 0 0;
-    margin-bottom: 4px;
+.tl-time {
+    color: var(--text-gray);
+    font-size: 0.83rem;
+    white-space: nowrap;
+}
+
+.tl-fl {
+    color: var(--text-dark);
+    font-weight: 600;
+    text-align: right;
+}
+
+.tl-precip {
+    color: var(--secondary-blue);
+    font-weight: 600;
+    text-align: center;
+}
+
+.tl-temp {
+    color: var(--text-dark);
+    font-weight: 500;
+    text-align: right;
+}
+
+/* Scrollbar for timeline */
+.forecast-timeline::-webkit-scrollbar {
+    width: 8px;
+}
+
+.forecast-timeline::-webkit-scrollbar-track {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.forecast-timeline::-webkit-scrollbar-thumb {
+    background: var(--secondary-blue);
+    border-radius: 4px;
+}
+
+.forecast-timeline::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-blue);
 }
 
 .info-box a {
@@ -426,25 +475,6 @@ footer a {
     text-decoration: underline;
 }
 
-/* Scrollbar styling */
-.freezing-levels::-webkit-scrollbar {
-    width: 8px;
-}
-
-.freezing-levels::-webkit-scrollbar-track {
-    background: var(--border-color);
-    border-radius: 4px;
-}
-
-.freezing-levels::-webkit-scrollbar-thumb {
-    background: var(--secondary-blue);
-    border-radius: 4px;
-}
-
-.freezing-levels::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-blue);
-}
-
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     body {
@@ -459,34 +489,4 @@ footer a {
         font-size: 1rem;
     }
 
-    .stations-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-
-    .input-group {
-        flex-direction: column;
-    }
-
-    .weather-data p {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-    }
-}
-
-@media (max-width: 480px) {
-    header h1 {
-        font-size: 1.5rem;
-    }
-
-    .api-key-section,
-    .station-card,
-    .info-box {
-        padding: 15px;
-    }
-
-    .weather-section {
-        padding: 15px;
-    }
-}
+ 
