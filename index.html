@@ -1,1 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time ski conditions for Auron and Isola 2000 ski stations in the French Alps">
+    <meta name="theme-color" content="#1e3a8a">
+    <title>Ski Stations Weather — Auron &amp; Isola 2000</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+<div class="container">
 
+    <header>
+        <h1>🎿 Ski Stations Weather</h1>
+        <p class="subtitle">Auron &amp; Isola 2000 — Alpes du Sud</p>
+    </header>
+
+    <!-- ── API Key section ── -->
+    <div class="api-key-section" id="apiKeySection">
+        <h2>⚙️ API Configuration</h2>
+        <p>A default OpenWeatherMap key is pre-configured — data loads automatically on startup.<br>
+           Enter your own key below to override, or clear the field and save to revert to the default.</p>
+        <div class="input-group">
+            <input type="text" id="apiKeyInput" placeholder="Default key pre-configured" />
+            <button id="saveApiKey" class="btn-primary">Save &amp; Fetch Data</button>
+        </div>
+        <p class="info-text">
+            <a href="https://openweathermap.org/api" target="_blank">Get your own free API key</a>
+        </p>
+    </div>
+
+    <!-- ── Loading ── -->
+    <div class="loading" id="loading" style="display:none;">
+        <div class="spinner"></div>
+        <p>Fetching ski conditions…</p>
+    </div>
+
+    <!-- ── Error ── -->
+    <div class="error" id="error" style="display:none;"></div>
+
+    <!-- ── Results ── -->
+    <div class="results" id="results" style="display:none;">
+
+        <div class="last-updated" id="lastUpdated"></div>
+
+        <div class="stations-grid">
+
+            <!-- ── AURON ── -->
+            <div class="station-card">
+                <div class="station-header auron">
+                    <h2>🏔️ AURON</h2>
+                </div>
+
+                <div class="measurement-time" id="auron-measurement-time"></div>
+
+                <!-- 1) Top station -->
+                <div class="weather-section">
+                    <h3>1️⃣ Weather at Top</h3>
+                    <div class="weather-data">
+                        <p><strong>Elevation:</strong> 2 450 m</p>
+                        <p><strong>Recent snowfall (last 3h):</strong> <span id="auron-top-snow">—</span></p>
+                        <p><strong>Temperature:</strong> <span id="auron-top-temp" class="temp">—</span></p>
+                    </div>
+                </div>
+
+                <!-- 2) Bottom station -->
+                <div class="weather-section">
+                    <h3>2️⃣ Weather at Bottom</h3>
+                    <div class="weather-data">
+                        <p><strong>Elevation:</strong> 1 600 m</p>
+                        <p><strong>Recent snowfall (last 3h):</strong> <span id="auron-bottom-snow">—</span></p>
+                        <p><strong>Temperature:</strong> <span id="auron-bottom-temp" class="temp">—</span></p>
+                    </div>
+                </div>
+
+                <!-- 3) Forecast timeline -->
+                <div class="weather-section">
+                    <h3>3️⃣ Forecast Timeline (precip + freezing level)</h3>
+                    <div id="auron-timeline" class="forecast-timeline"></div>
+                </div>
+
+                <div class="station-link">
+                    <a href="https://hiver.auron.com/bulletin-des-pistes/" target="_blank" class="btn-link">
+                        📊 Official Snow Bulletin
+                    </a>
+                </div>
+            </div><!-- /auron -->
+
+            <!-- ── ISOLA 2000 ── -->
+            <div class="station-card">
+                <div class="station-header isola">
+                    <h2>⛷️ ISOLA 2000</h2>
+                </div>
+
+                <div class="measurement-time" id="isola-measurement-time"></div>
+
+                <!-- 1) Top station -->
+                <div class="weather-section">
+                    <h3>1️⃣ Weather at Top</h3>
+                    <div class="weather-data">
+                        <p><strong>Elevation:</strong> 2 600 m</p>
+                        <p><strong>Recent snowfall (last 3h):</strong> <span id="isola-top-snow">—</span></p>
+                        <p><strong>Temperature:</strong> <span id="isola-top-temp" class="temp">—</span></p>
+                    </div>
+                </div>
+
+                <!-- 2) Bottom station -->
+                <div class="weather-section">
+                    <h3>2️⃣ Weather at Bottom</h3>
+                    <div class="weather-data">
+                        <p><strong>Elevation:</strong> 2 000 m</p>
+                        <p><strong>Recent snowfall (last 3h):</strong> <span id="isola-bottom-snow">—</span></p>
+                        <p><strong>Temperature:</strong> <span id="isola-bottom-temp" class="temp">—</span></p>
+                    </div>
+                </div>
+
+                <!-- 3) Forecast timeline -->
+                <div class="weather-section">
+                    <h3>3️⃣ Forecast Timeline (precip + freezing level)</h3>
+                    <div id="isola-timeline" class="forecast-timeline"></div>
+                </div>
+
+                <div class="station-link">
+                    <a href="https://isola2000.com/bulletin-pistes/" target="_blank" class="btn-link">
+                        📊 Official Snow Bulletin
+                    </a>
+                </div>
+            </div><!-- /isola -->
+
+        </div><!-- /stations-grid -->
+
+        <!-- ── Notes ── -->
+        <div class="info-box">
+            <h3>ℹ️ Notes</h3>
+            <ul>
+                <li><strong>Recent snowfall</strong> = precipitation in the last 3 hours, <em>not</em> the total accumulated snow base.</li>
+                <li>For actual snow height and piste conditions, consult the official bulletins above.</li>
+                <li><strong>Forecast Timeline</strong> merges the freezing-level forecast (Open-Meteo) and precipitation events (OWM) into a single chronological table. Rows at the same hour are merged.</li>
+                <li><strong>Freezing level (FL)</strong> is sourced from <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> (free, no API key, ~1–2 km resolution). If unavailable, it is estimated via lapse rate (6.5 °C/1 000 m) from the bottom-station temperature.</li>
+            </ul>
+        </div>
+
+        <button id="refreshBtn" class="btn-primary refresh-btn">🔄 Refresh Data</button>
+
+    </d
