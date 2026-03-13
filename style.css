@@ -1,1 +1,300 @@
+/* ═══════════════════════════════════════════════════════════════
+   Ski Stations Weather PWA — styles
+   Mirrors layout of ski_stations_report.py (March 2026)
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ── Reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+    min-height: 100vh;
+    color: #e2e8f0;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+}
+
+/* ── Header ───────────────────────────────────────────────────── */
+header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+header h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0,0,0,.4);
+}
+.subtitle {
+    color: #93c5fd;
+    font-size: 1rem;
+    margin-top: .25rem;
+}
+
+/* ── API Key section ──────────────────────────────────────────── */
+.api-key-section {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+.api-key-section h2 {
+    font-size: 1rem;
+    color: #93c5fd;
+    margin-bottom: .5rem;
+}
+.api-key-section p {
+    font-size: .85rem;
+    color: #94a3b8;
+    margin-bottom: .75rem;
+}
+.input-group {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+.input-group input {
+    flex: 1;
+    min-width: 200px;
+    padding: .5rem .75rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,.2);
+    background: rgba(255,255,255,.1);
+    color: #f1f5f9;
+    font-size: .9rem;
+}
+.input-group input::placeholder { color: #64748b; }
+.input-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background: rgba(59,130,246,.12);
+}
+.info-text { font-size: .8rem; color: #64748b; margin-top: .5rem; }
+.info-text a { color: #60a5fa; }
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+.btn-primary {
+    padding: .5rem 1.1rem;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    white-space: nowrap;
+}
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(37,99,235,.5);
+}
+.btn-primary:active { transform: translateY(0); }
+.refresh-btn { display: block; margin: 1.5rem auto 0; }
+
+.btn-link {
+    display: inline-block;
+    padding: .45rem .9rem;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 8px;
+    color: #93c5fd;
+    text-decoration: none;
+    font-size: .85rem;
+    transition: background .15s;
+}
+.btn-link:hover { background: rgba(255,255,255,.15); }
+
+/* ── Loading spinner ──────────────────────────────────────────── */
+.loading {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255,255,255,.15);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Error ────────────────────────────────────────────────────── */
+.error {
+    background: rgba(239,68,68,.15);
+    border: 1px solid rgba(239,68,68,.4);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    color: #fca5a5;
+    margin: 1rem 0;
+    font-size: .9rem;
+}
+
+/* ── Last updated ─────────────────────────────────────────────── */
+.last-updated {
+    text-align: center;
+    color: #94a3b8;
+    font-size: .85rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Stations grid ────────────────────────────────────────────── */
+.stations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ── Station card ─────────────────────────────────────────────── */
+.station-card {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.station-header {
+    padding: .9rem 1.25rem;
+    text-align: center;
+}
+.station-header h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: .04em;
+}
+.station-header.auron { background: linear-gradient(135deg, #1d4ed8, #2563eb); }
+.station-header.isola { background: linear-gradient(135deg, #0f766e, #0d9488); }
+
+.measurement-time {
+    text-align: center;
+    font-size: .78rem;
+    color: #64748b;
+    padding: .4rem 1rem .2rem;
+}
+
+/* ── Weather sections ─────────────────────────────────────────── */
+.weather-section {
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding: .9rem 1.25rem;
+}
+.weather-section h3 {
+    font-size: .88rem;
+    font-weight: 600;
+    color: #93c5fd;
+    margin-bottom: .55rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.weather-data p {
+    font-size: .88rem;
+    color: #cbd5e1;
+    margin-bottom: .2rem;
+}
+.weather-data strong { color: #e2e8f0; }
+
+.temp { font-weight: 700; color: #fbbf24; }
+
+/* ── Forecast timeline ────────────────────────────────────────── */
+.forecast-timeline { font-size: .8rem; }
+
+.fl-source {
+    color: #64748b;
+    font-size: .76rem;
+    margin-bottom: .4rem;
+}
+
+/* header row */
+.tl-header {
+    display: grid;
+    grid-template-columns: 11rem 4.5rem 8rem 4.5rem;
+    gap: .25rem;
+    padding: .3rem .4rem;
+    background: rgba(255,255,255,.07);
+    border-radius: 6px 6px 0 0;
+    font-size: .76rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+/* data rows */
+.tl-row {
+    display: grid;
+    grid-template-columns: 11rem 4.5rem 8rem 4.5rem;
+    gap: .25rem;
+    padding: .28rem .4rem;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    transition: background .1s;
+}
+.tl-row:hover { background: rgba(255,255,255,.05); }
+.tl-row.has-precip { background: rgba(59,130,246,.08); }
+.tl-row.has-precip:hover { background: rgba(59,130,246,.14); }
+
+/* columns */
+.tl-c-time   { color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-c-fl     { color: #fbbf24; font-weight: 600; text-align: right; }
+.tl-c-precip { color: #60a5fa; }
+.tl-c-temp   { color: #34d399; font-weight: 600; text-align: right; }
+
+.tl-empty { color: #64748b; font-size: .82rem; padding: .5rem .4rem; }
+
+/* ── Info box ─────────────────────────────────────────────────── */
+.info-box {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.info-box h3 {
+    font-size: .9rem;
+    font-weight: 600;
+    color: #93c5fd;
+    margin-bottom: .5rem;
+}
+.info-box ul { padding-left: 1.2rem; }
+.info-box li {
+    font-size: .82rem;
+    color: #94a3b8;
+    margin-bottom: .3rem;
+    line-height: 1.5;
+}
+.info-box a { color: #60a5fa; }
+
+/* ── Station link ─────────────────────────────────────────────── */
+.station-link {
+    padding: .75rem 1.25rem 1rem;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,.07);
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+footer {
+    text-align: center;
+    padding: 1.5rem .5rem .5rem;
+    color: #475569;
+    font-size: .78rem;
+    line-height: 1.8;
+}
+footer a { color: #60a5fa; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 520px) {
+    .tl-header,
+    .tl-row {
+        grid-template-columns: 9rem 4rem 7.5rem 4rem;
+        font-size: .74rem;
+    }
+}
