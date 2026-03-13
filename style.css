@@ -205,7 +205,7 @@ header h1 {
 .temp { font-weight: 700; color: #fbbf24; }
 
 /* ── Forecast timeline ────────────────────────────────────────── */
-.forecast-timeline { font-size: .8rem; }
+.forecast-timeline { font-size: .8rem; overflow-x: auto; }
 
 .fl-source {
     color: #64748b;
@@ -216,36 +216,40 @@ header h1 {
 /* header row */
 .tl-header {
     display: grid;
-    grid-template-columns: 11rem 4.5rem 8rem 4.5rem;
-    gap: .25rem;
+    grid-template-columns: 10rem 4.5rem 8rem 4rem 8rem 4rem;
+    gap: .2rem;
     padding: .3rem .4rem;
     background: rgba(255,255,255,.07);
     border-radius: 6px 6px 0 0;
-    font-size: .76rem;
+    font-size: .73rem;
     font-weight: 600;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: .04em;
+    min-width: 580px;
 }
 
 /* data rows */
 .tl-row {
     display: grid;
-    grid-template-columns: 11rem 4.5rem 8rem 4.5rem;
-    gap: .25rem;
+    grid-template-columns: 10rem 4.5rem 8rem 4rem 8rem 4rem;
+    gap: .2rem;
     padding: .28rem .4rem;
     border-bottom: 1px solid rgba(255,255,255,.04);
     transition: background .1s;
+    min-width: 580px;
 }
 .tl-row:hover { background: rgba(255,255,255,.05); }
 .tl-row.has-precip { background: rgba(59,130,246,.08); }
 .tl-row.has-precip:hover { background: rgba(59,130,246,.14); }
 
 /* columns */
-.tl-c-time   { color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tl-c-fl     { color: #fbbf24; font-weight: 600; text-align: right; }
-.tl-c-precip { color: #60a5fa; }
-.tl-c-temp   { color: #34d399; font-weight: 600; text-align: right; }
+.tl-c-time  { color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-c-fl    { color: #fbbf24; font-weight: 600; text-align: right; }
+.tl-c-top   { color: #60a5fa; }
+.tl-c-top-t { color: #34d399; font-weight: 600; text-align: right; }
+.tl-c-bot   { color: #7dd3fc; }
+.tl-c-bot-t { color: #6ee7b7; font-weight: 600; text-align: right; }
 
 .tl-empty { color: #64748b; font-size: .82rem; padding: .5rem .4rem; }
 
@@ -291,10 +295,12 @@ footer a { color: #60a5fa; text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 
 /* ── Responsive ───────────────────────────────────────────────── */
-@media (max-width: 520px) {
+@media (max-width: 640px) {
+    .stations-grid { grid-template-columns: 1fr; }
     .tl-header,
     .tl-row {
-        grid-template-columns: 9rem 4rem 7.5rem 4rem;
-        font-size: .74rem;
+        grid-template-columns: 9rem 4rem 7rem 3.5rem 7rem 3.5rem;
+        font-size: .7rem;
+        min-width: 520px;
     }
 }
