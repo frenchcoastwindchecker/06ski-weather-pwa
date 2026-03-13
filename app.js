@@ -249,10 +249,11 @@ function fallbackFreezingLevel(tempBottom, elevBottom) {
 async function fetchStationData(stationKey) {
     const station = STATIONS[stationKey];
 
-    const [topWeather, bottomWeather, forecast] = await Promise.all([
+    const [topWeather, bottomWeather, forecast, bottomForecast] = await Promise.all([
         fetchCurrentWeather(station.top.lat,    station.top.lon),
         fetchCurrentWeather(station.bottom.lat, station.bottom.lon),
-        fetchForecast(station.top.lat, station.top.lon)
+        fetchForecast(station.top.lat,    station.top.lon),
+        fetchForecast(station.bottom.lat, station.bottom.lon)
     ]);
 
     const data = {
@@ -274,10 +275,14 @@ async function fetchStationData(stationKey) {
         source:           ''
     };
 
-    // ── Precipitation forecast (OWM) ──
+    // ── Precipitation forecast at TOP station (OWM) ──
     const { hasPrecip, precipTimes } = checkPrecipitationForecast(forecast);
     data.hasPrecipitation = hasPrecip;
     data.precipTimes      = precipTimes;
+
+    // ── Precipitation forecast at BOTTOM station (OWM) ──
+    const { precipTimes: bottomPrecipTimes } = checkPrecipitationForecast(bottomForecast);
+    data.bottomPrecipTimes = bottomPrecipTimes;
 
     // ── Freezing level (Open-Meteo — primary) ──
     const omLevels = await fetchFreezingLevelsOpenMeteo(station.top.lat, station.top.lon);
@@ -333,23 +338,37 @@ function buildTimeline(data) {
         return d.getTime();
     };
 
+    const emptyEntry = k => ({
+        time: new Date(k), flLevel: null,
+        rainMm: null, snowMm: null, temp: null,
+        bottomRainMm: null, bottomSnowMm: null, bottomTemp: null
+    });
+
     // Freezing-level slots
     data.freezingLevels.forEach(fl => {
         const k = hourKey(fl.time);
-        if (!merged.has(k))
-            merged.set(k, { time: new Date(k), flLevel: null, rainMm: null, snowMm: null, temp: null });
+        if (!merged.has(k)) merged.set(k, emptyEntry(k));
         merged.get(k).flLevel = fl.level;
     });
 
-    // Precipitation events
+    // TOP station precipitation events
     data.precipTimes.forEach(p => {
         const k = hourKey(p.time);
-        if (!merged.has(k))
-            merged.set(k, { time: new Date(k), flLevel: null, rainMm: null, snowMm: null, temp: null });
+        if (!merged.has(k)) merged.set(k, emptyEntry(k));
         const entry = merged.get(k);
         if (p.rainMm > 0) entry.rainMm = p.rainMm;
         if (p.snowMm > 0) entry.snowMm = p.snowMm;
         entry.temp = p.temp;
+    });
+
+    // BOTTOM station precipitation events
+    (data.bottomPrecipTimes || []).forEach(p => {
+        const k = hourKey(p.time);
+        if (!merged.has(k)) merged.set(k, emptyEntry(k));
+        const entry = merged.get(k);
+        if (p.rainMm > 0) entry.bottomRainMm = p.rainMm;
+        if (p.snowMm > 0) entry.bottomSnowMm = p.snowMm;
+        entry.bottomTemp = p.temp;
     });
 
     return [...merged.values()].sort((a, b) => a.time - b.time);
@@ -429,8 +448,10 @@ function displayStationData(stationKey, data) {
     hdr.innerHTML =
         `<span class="tl-c-time">Date / Time (CET)</span>` +
         `<span class="tl-c-fl">FL (m)</span>` +
-        `<span class="tl-c-precip">Precip</span>` +
-        `<span class="tl-c-temp">Temp</span>`;
+        `<span class="tl-c-top">▲ Top Precip</span>` +
+        `<span class="tl-c-top-t" title="Air temperature at the top station elevation">T@top</span>` +
+        `<span class="tl-c-bot">▼ Bot Precip</span>` +
+        `<span class="tl-c-bot-t" title="Air temperature at the bottom station elevation">T@bot</span>`;
     tlEl.appendChild(hdr);
 
     const timeline = buildTimeline(data);
@@ -445,24 +466,34 @@ function displayStationData(stationKey, data) {
     timeline.forEach(entry => {
         const row = document.createElement('div');
         row.className = 'tl-row';
-        if (entry.rainMm > 0 || entry.snowMm > 0) row.classList.add('has-precip');
+        if (entry.rainMm > 0 || entry.snowMm > 0 ||
+            entry.bottomRainMm > 0 || entry.bottomSnowMm > 0)
+            row.classList.add('has-precip');
 
-        const timeStr  = formatTimelineCET(entry.time);
-        const flStr    = entry.flLevel != null ? `${entry.flLevel} m` : '—';
+        const timeStr = formatTimelineCET(entry.time);
+        const flStr   = entry.flLevel != null ? `${entry.flLevel} m` : '—';
 
-        let precipStr = '—';
-        if (entry.rainMm > 0)       precipStr = `🌧 Rain ${entry.rainMm.toFixed(1)} mm`;
-        else if (entry.snowMm > 0)  precipStr = `❄️ Snow ${(entry.snowMm / 10).toFixed(1)} cm`;
+        // Top station precip
+        let topStr = '—';
+        if (entry.rainMm > 0)      topStr = `🌧 ${entry.rainMm.toFixed(1)} mm`;
+        else if (entry.snowMm > 0) topStr = `❄️ ${(entry.snowMm / 10).toFixed(1)} cm`;
+        const topTempStr = entry.temp != null
+            ? `${entry.temp > 0 ? '+' : ''}${entry.temp.toFixed(1)}°C` : '—';
 
-        const tempStr = entry.temp != null
-            ? `${entry.temp > 0 ? '+' : ''}${entry.temp.toFixed(1)}°C`
-            : '—';
+        // Bottom station precip
+        let botStr = '—';
+        if (entry.bottomRainMm > 0)      botStr = `🌧 ${entry.bottomRainMm.toFixed(1)} mm`;
+        else if (entry.bottomSnowMm > 0) botStr = `❄️ ${(entry.bottomSnowMm / 10).toFixed(1)} cm`;
+        const botTempStr = entry.bottomTemp != null
+            ? `${entry.bottomTemp > 0 ? '+' : ''}${entry.bottomTemp.toFixed(1)}°C` : '—';
 
         row.innerHTML =
             `<span class="tl-c-time">${timeStr}</span>` +
             `<span class="tl-c-fl">${flStr}</span>` +
-            `<span class="tl-c-precip">${precipStr}</span>` +
-            `<span class="tl-c-temp">${tempStr}</span>`;
+            `<span class="tl-c-top">${topStr}</span>` +
+            `<span class="tl-c-top-t">${topTempStr}</span>` +
+            `<span class="tl-c-bot">${botStr}</span>` +
+            `<span class="tl-c-bot-t">${botTempStr}</span>`;
         tlEl.appendChild(row);
     });
 }
