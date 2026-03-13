@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ski-weather-v2';
+const CACHE_NAME = 'ski-weather-v3';
 const urlsToCache = [
   './',
   './index.html',
