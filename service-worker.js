@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
 //  Ski Stations Weather PWA — Service Worker
-//  Cache version: v4  (March 2026 — sync with ski_stations_report.py)
+//  Cache version: v5  (March 2026 — full-width layout + mobile scroll)
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'ski-pwa-v4';
+const CACHE_NAME = 'ski-pwa-v5';
 const ASSETS = [
     './',
     './index.html',
