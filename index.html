@@ -21,12 +21,13 @@
             <h2>⚙️ API Configuration</h2>
             <p>Enter your OpenWeatherMap API key (or use default):</p>
             <div class="input-group">
-                <input type="text" id="apiKeyInput" placeholder="API Key (optional - default provided)" />
+                <input type="text" id="apiKeyInput" placeholder="Default key pre-configured" />
                 <button id="saveApiKey" class="btn-primary">Save & Fetch Data</button>
             </div>
             <p class="info-text">
-                Default key is pre-configured. Click "Save & Fetch Data" to use it, or enter your own key.
-                <a href="https://openweathermap.org/api" target="_blank">Get a free API key</a>
+                A default OpenWeatherMap key is pre-configured — data loads automatically on startup.
+                Clear the input and click "Save &amp; Fetch Data" to revert to the default at any time.
+                <a href="https://openweathermap.org/api" target="_blank">Get your own free API key</a>
             </p>
         </div>
 
@@ -144,4 +145,3 @@
 
     <script src="app.js"></script>
 </body>
-</html>
