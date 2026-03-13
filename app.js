@@ -43,11 +43,15 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Event listeners ───────────────────────────────────────────────
-saveApiKeyBtn.addEventListener('click', handleSaveApiKey);
-refreshBtn.addEventListener('click', fetchAllData);
+if (saveApiKeyBtn) saveApiKeyBtn.addEventListener('click', handleSaveApiKey);
+if (refreshBtn)    refreshBtn.addEventListener('click', fetchAllData);
 
-// ── Start ─────────────────────────────────────────────────────────
-init();
+// ── Start (deferred to ensure DOM is fully ready) ─────────────────
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
 function init() {
     apiKeyInput.value = (apiKey && apiKey !== DEFAULT_API_KEY) ? apiKey : '';
@@ -359,22 +363,18 @@ async function fetchAllData() {
     showLoading();
     hideError();
     try {
-        const ok = await testApiKey(apiKey);
-        if (!ok) {
-            throw new Error('Invalid API key. Please enter a valid OpenWeatherMap key.');
-        }
-
         const [auronData, isolaData] = await Promise.all([
             fetchStationData('auron'),
             fetchStationData('isola')
         ]);
 
         displayResults(auronData, isolaData);
-        lastUpdatedEl.textContent = `📅 Report Execution: ${formatDateTimeCET(new Date())}`;
-        apiKeySectionEl.style.display = 'none';
+        if (lastUpdatedEl)   lastUpdatedEl.textContent = `📅 Report Execution: ${formatDateTimeCET(new Date())}`;
+        if (apiKeySectionEl) apiKeySectionEl.style.display = 'none';
 
     } catch (err) {
-        showError(err.message);
+        console.error('fetchAllData error:', err);
+        showError(err.message || String(err));
     } finally {
         hideLoading();
     }
@@ -407,4 +407,71 @@ function displayStationData(stationKey, data) {
 
     // Section 2 — Bottom station
     const botSnowEl = document.getElementById(`${stationKey}-bottom-snow`);
-    const botTempEl = document.getElementBy
+    const botTempEl = document.getElementById(`${stationKey}-bottom-temp`);
+    if (botSnowEl) botSnowEl.textContent = `${data.bottom.snow.toFixed(1)} mm`;
+    if (botTempEl) botTempEl.textContent = `${data.bottom.temp.toFixed(1)} °C`;
+
+    // Section 3 — Unified forecast timeline
+    const tlEl = document.getElementById(`${stationKey}-timeline`);
+    if (!tlEl) return;
+    tlEl.innerHTML = '';
+
+    // Source label
+    const sourceEl = document.createElement('p');
+    sourceEl.className = 'fl-source';
+    sourceEl.innerHTML = `<em>FL source: ${data.source}</em>`;
+    tlEl.appendChild(sourceEl);
+
+    // Column header
+    const hdr = document.createElement('div');
+    hdr.className = 'tl-header';
+    hdr.innerHTML =
+        `<span class="tl-c-time">Date / Time (CET)</span>` +
+        `<span class="tl-c-fl">FL (m)</span>` +
+        `<span class="tl-c-precip">Precip</span>` +
+        `<span class="tl-c-temp">Temp</span>`;
+    tlEl.appendChild(hdr);
+
+    const timeline = buildTimeline(data);
+    if (timeline.length === 0) {
+        const emp = document.createElement('p');
+        emp.className = 'tl-empty';
+        emp.textContent = 'No forecast data available.';
+        tlEl.appendChild(emp);
+        return;
+    }
+
+    timeline.forEach(entry => {
+        const row = document.createElement('div');
+        row.className = 'tl-row';
+        if (entry.rainMm > 0 || entry.snowMm > 0) row.classList.add('has-precip');
+
+        const timeStr  = formatTimelineCET(entry.time);
+        const flStr    = entry.flLevel != null ? `${entry.flLevel} m` : '—';
+
+        let precipStr = '—';
+        if (entry.rainMm > 0)       precipStr = `🌧 Rain ${entry.rainMm.toFixed(1)} mm`;
+        else if (entry.snowMm > 0)  precipStr = `❄️ Snow ${(entry.snowMm / 10).toFixed(1)} cm`;
+
+        const tempStr = entry.temp != null
+            ? `${entry.temp > 0 ? '+' : ''}${entry.temp.toFixed(1)}°C`
+            : '—';
+
+        row.innerHTML =
+            `<span class="tl-c-time">${timeStr}</span>` +
+            `<span class="tl-c-fl">${flStr}</span>` +
+            `<span class="tl-c-precip">${precipStr}</span>` +
+            `<span class="tl-c-temp">${tempStr}</span>`;
+        tlEl.appendChild(row);
+    });
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function showLoading()  { loadingEl.style.display = 'block'; resultsEl.style.display = 'none'; }
+function hideLoading()  { loadingEl.style.display = 'none'; }
+function showError(msg) {
+    errorEl.textContent   = `❌ Error: ${msg}`;
+    errorEl.style.display = 'block';
+    resultsEl.style.display = 'none';
+}
+function hideError() { errorEl.style.display = 'none'; }
