@@ -31,8 +31,8 @@
         </p>
     </div>
 
-    <!-- ── Loading ── -->
-    <div class="loading" id="loading" style="display:none;">
+    <!-- ── Loading (visible by default; JS hides it when done) ── -->
+    <div class="loading" id="loading">
         <div class="spinner"></div>
         <p>Fetching ski conditions…</p>
     </div>
@@ -144,4 +144,15 @@
 
         <button id="refreshBtn" class="btn-primary refresh-btn">🔄 Refresh Data</button>
 
-    </d
+    </div><!-- /results -->
+
+    <footer>
+        <p>Weather &amp; precipitation: <a href="https://openweathermap.org/" target="_blank">OpenWeatherMap</a></p>
+        <p>Freezing level: <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a></p>
+        <p>Made with ❄️ for ski enthusiasts</p>
+    </footer>
+
+</div><!-- /container -->
+<script src="app.js"></script>
+</body>
+</html>
